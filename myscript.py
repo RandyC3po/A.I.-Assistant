@@ -12,6 +12,20 @@ class PersonalAI:
     
 
     def load_config(self, config_file):
+    """
+    Loads the configuration from a JSON file.
+
+    Args:
+        config_file (str): The path to the configuration file.
+
+    Returns:
+        dict: The configuration data loaded from the file. If the file is not found, 
+        returns a default configuration with an empty list of allowed databases.
+
+    Raises:
+        json.JSONDecodeError: If there is an error decoding the JSON.
+    """
+
         try:
             with open(config_file, 'r') as f:
                 return json.load(f)
