@@ -9,23 +9,14 @@ from data_access import query_database as da_query_database # Renamed to avoid c
 
 
 class PersonalAI:
-    
+    def __init__(self, config_file="config.json"):
+        self.config = self.load_config(config_file)
+        self.allowed_databases = self.config.get("allowed_databases", [])
+        self.current_arm_template_data = None
+        self.current_arm_template_filepath = None
 
     def load_config(self, config_file):
-    """
-    Loads the configuration from a JSON file.
-
-    Args:
-        config_file (str): The path to the configuration file.
-
-    Returns:
-        dict: The configuration data loaded from the file. If the file is not found, 
-        returns a default configuration with an empty list of allowed databases.
-
-    Raises:
-        json.JSONDecodeError: If there is an error decoding the JSON.
-    """
-
+        """Loads the configuration from a JSON file."""
         try:
             with open(config_file, 'r') as f:
                 return json.load(f)
@@ -33,8 +24,43 @@ class PersonalAI:
             return {"allowed_databases": []}
         # Add other error handling like json.JSONDecodeError if needed
 
+    def load_arm_template(self, filepath: str) -> bool:
+        """Loads an ARM template from a JSON file."""
+        try:
+            with open(filepath, 'r') as f:
+                self.current_arm_template_data = json.load(f)
+            self.current_arm_template_filepath = filepath
+            print(f"Debug: Successfully loaded ARM template from '{filepath}'")
+            return True
+        except FileNotFoundError:
+            print(f"Error: ARM template file '{filepath}' not found.")
+            self.current_arm_template_data = None
+            self.current_arm_template_filepath = None
+            return False
+        except json.JSONDecodeError as e:
+            print(f"Error: Failed to decode JSON from ARM template '{filepath}'. {e}")
+            self.current_arm_template_data = None
+            self.current_arm_template_filepath = None
+            return False
+        except Exception as e:
+            print(f"Unexpected error loading ARM template '{filepath}': {type(e).__name__} - {e}")
+            self.current_arm_template_data = None
+            self.current_arm_template_filepath = None
+            return False
+
+    def get_arm_template_summary(self) -> str:
+        """Generates a summary of the currently loaded ARM template."""
+        if not self.current_arm_template_data:
+            return "No ARM template is currently loaded."
+        num_resources = len(self.current_arm_template_data.get('resources', []))
+        num_parameters = len(self.current_arm_template_data.get('parameters', {}))
+        schema = self.current_arm_template_data.get('$schema', 'Not specified')
+        return f"ARM Template Summary for '{self.current_arm_template_filepath}':\n" \
+               f"- Schema: {schema}\n" \
+               f"- Parameters defined: {num_parameters}\n" \
+               f"- Resources defined: {num_resources}"
+
     def process_command(self, command):
-        
         def _read_json_database(database_name):  # Renamed to be more specific
            
             try:
@@ -64,6 +90,15 @@ class PersonalAI:
             elif intent["action"] == "define_word":
                 definition_data = self.get_word_definition(intent["word"])
                 response = generate_response(intent, definition_data)
+                return response
+            elif intent["action"] == "load_arm":
+                success = self.load_arm_template(intent["filepath"])
+                # Pass intent and success status to generate_response
+                response = generate_response(intent, {"success": success, "filepath": intent["filepath"]})
+                return response
+            elif intent["action"] == "summarize_arm":
+                summary = self.get_arm_template_summary()
+                response = generate_response(intent, summary) # Pass summary as data
                 return response
         else:            
             return generate_response(None, None)
@@ -132,6 +167,19 @@ class PersonalAI:
             print(f"Debug: 'define' intent - word: '{term_to_define}'")
             return {"action": "define_word", "word": term_to_define}
 
+        # Intent: Load ARM Template
+        elif command.startswith("load arm template "):
+            parts = command.split("load arm template ", 1)
+            if len(parts) > 1 and parts[1].strip():
+                filepath = parts[1].strip()
+                print(f"Debug: 'load_arm' intent - filepath: '{filepath}'")
+                return {"action": "load_arm", "filepath": filepath}
+
+        # Intent: Summarize ARM Template
+        elif command == "summarize arm template" or command == "describe arm template":
+            print(f"Debug: 'summarize_arm' intent")
+            return {"action": "summarize_arm"}
+
         return None
 
     def access_data(self, intent):
@@ -179,10 +227,8 @@ class AIAssistantGUI:
         self.master = master
         master.title("Personal AI Assistant")
 
-        config = self.load_config("config.json")
-        self.allowed_databases = config.get("allowed_databases", [])
-
-        self.ai_assistant = PersonalAI() # Create an instance of the AI
+        # PersonalAI now loads its own configuration
+        self.ai_assistant = PersonalAI(config_file="config.json")
 
         self.command_label = tk.Label(master, text="Enter command:")
         self.command_label.pack()
@@ -200,14 +246,8 @@ class AIAssistantGUI:
         self.exit_button = tk.Button(master, text="Exit", command=self.exit_program)
         self.exit_button.pack()
 
-        self.ai_assistant.allowed_databases = self.allowed_databases
+        # self.ai_assistant.allowed_databases is now handled internally by PersonalAI
 
-    def load_config(self, config_file):
-        try:
-            with open(config_file, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return {"allowed_databases": []}
     def process_input(self, event=None):
         user_command = self.command_entry.get()
         print(f"User Command: {user_command}")  # Debugging
