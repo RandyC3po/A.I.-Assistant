@@ -176,8 +176,11 @@ class PersonalAI:
                 return {"action": "load_arm", "filepath": filepath}
 
         # Intent: Summarize ARM Template
-        elif command == "summarize arm template" or command == "describe arm template":
-            print(f"Debug: 'summarize_arm' intent")
+        # Original: elif command == "summarize arm template" or command == "describe arm template":
+        # More flexible version using tokenized words:
+        elif ("summarize" in words or "describe" in words) and \
+             "arm" in words and "template" in words:
+            print(f"Debug: 'summarize_arm' intent (flexible)")
             return {"action": "summarize_arm"}
 
         return None
