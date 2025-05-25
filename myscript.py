@@ -180,8 +180,21 @@ class PersonalAI:
         # More flexible version using tokenized words:
         elif ("summarize" in words or "describe" in words) and \
              "arm" in words and "template" in words:
-            print(f"Debug: 'summarize_arm' intent (flexible)")
-            return {"action": "summarize_arm"}
+            # Basic check to ensure keywords appear in a somewhat logical order,
+            # e.g., "summarize" or "describe" appears before "arm" and "template".
+            action_word_idx = -1
+            if "summarize" in words:
+                action_word_idx = words.index("summarize")
+            elif "describe" in words: # This will take the first occurrence if both are present
+                action_word_idx = words.index("describe")
+
+            # Check if "arm" and "template" appear after the action word and in order
+            try:
+                if action_word_idx != -1 and words.index("arm", action_word_idx) < words.index("template", words.index("arm", action_word_idx) + 1):
+                    print(f"Debug: 'summarize_arm' intent (flexible)")
+                    return {"action": "summarize_arm"}
+            except ValueError: # If "arm" or "template" not found in the expected sequence
+                pass
 
         return None
 
