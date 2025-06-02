@@ -7,15 +7,15 @@
             "type": "reactnative",
             "cwd": "${workspaceFolder}",
             "platform": "android",
-            "port": 8081
+            "port": 8081 
         },
         {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": false
+            "console": "integratedTerminal"
+            "justMyCode": true 
         },
         {
             "name": "Python: Module",
