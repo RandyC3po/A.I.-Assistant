@@ -10,16 +10,16 @@
             "port": 8081
         },
         {
-            "name": "Python Debugger: Current File",
-            "type": "debugpy",
+            "name": "Python: Current File",
+            "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false
         },
         {
-            "name": "Python Debugger: Module",
-            "type": "debugpy",
+            "name": "Python: Module",
+            "type": "python",
             "request": "launch",
             "module": "my_app.main",
             "console": "integratedTerminal"
